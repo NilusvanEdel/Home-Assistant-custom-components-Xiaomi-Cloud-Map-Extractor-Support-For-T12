@@ -146,8 +146,9 @@ class XiaomiCloudConnector:
                 user_id = found[0]["uid"]
                 device_id = found[0]["did"]
                 model = found[0]["model"]
+                mac = found[0]["mac"]
                 self.country = country
-                return country, user_id, device_id, model
+                return country, user_id, device_id, model, mac
         return None, None, None, None
 
     def get_devices(self, country: str) -> any:
