@@ -49,14 +49,15 @@ class IjaiCloudVacuum(XiaomiCloudVacuumV2):
         return self._connector.get_raw_map_data(map_url)
 
     def decode_and_parse(self, data):
-        self.decrypt_map(
+        decoded_map = self.decrypt_map(
             data=data,
             wifi_info_sn=self._wifi_info_sn,
             user_id=self._user_id,
-            device_id=self._user_id,
+            device_id=self._device_id,
             model=self.model,
-            mac=self._mac,
+            mac=self._mac
         )
+        self.map_data_parser.parse(decoded_map)
 
     def decrypt_map(
         self,
@@ -73,5 +74,5 @@ class IjaiCloudVacuum(XiaomiCloudVacuumV2):
             owner_id=str(user_id),
             device_id=device_id,
             model=model,
-            device_mac=mac,
+            device_mac=mac
         )

@@ -40,7 +40,7 @@ class XiaomiCloudVacuum(ABC):
         self._country = vacuum_config.country
         self._user_id = vacuum_config.user_id
         self._device_id = vacuum_config.device_id
-        self._mac = vacuum_config.mac,
+        self._mac = vacuum_config.mac
         self._localip = vacuum_config.localip
         self._palette = vacuum_config.palette
         self._drawables = vacuum_config.drawables

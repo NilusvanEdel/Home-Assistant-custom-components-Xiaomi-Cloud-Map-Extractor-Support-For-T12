@@ -30,9 +30,7 @@ class MapDataParserIjai(MapDataParser):
 
     POSITION_UNKNOWN = 1100
 
-    @staticmethod
-    def parse(raw: bytes, colors: Color, drawables: Drawable, texts: Text, sizes: Sizes,
-              image_config: ImageConfig, *args, **kwargs) -> MapData:
+    def parse(self, raw: bytes, *args, **kwargs) -> MapData:
         map_data = MapData(0, 1)
         buf = ParsingBuffer('header', raw, 0, len(raw))
 

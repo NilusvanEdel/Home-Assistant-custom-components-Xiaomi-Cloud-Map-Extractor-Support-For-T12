@@ -53,7 +53,7 @@ def _generate_md5_key(input_string, model_name, device_mac):
 
 def generate_md5_key(wifi_info_sn: str, owner_id: str, device_id: str, model: str, device_mac: str):
     try:
-        arr = [wifi_info_sn, owner_id, device_id]
+        arr = [str(wifi_info_sn), str(owner_id), str(device_id)]
         temp_string = '+'.join(arr)
         return _generate_md5_key(temp_string, model, device_mac)
     except Exception as e:

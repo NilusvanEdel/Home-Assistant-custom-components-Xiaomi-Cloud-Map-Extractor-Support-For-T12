@@ -52,7 +52,6 @@ def save_map(inflated_map: bytes, map_name: str, logger: logging.Logger):
 
         robot_map = RobotMap.RobotMap()
         robot_map.ParseFromString(inflated_map)
-
         imageBytes = robot_map.mapData.mapData
         imageWidth = robot_map.mapHead.sizeX
         imageHeight = robot_map.mapHead.sizeY
@@ -84,7 +83,6 @@ def main():
 
         for prop in got_from_vacuum[0]["value"].split(","):
             cleaned_prop = str(prop).replace('"', "")
-
             if str(user_id) in cleaned_prop:
                 wifi_info_sn = cleaned_prop.split(";")[0]
             elif (
@@ -93,7 +91,7 @@ def main():
                 and cleaned_prop.isupper()
             ):
                 wifi_info_sn = cleaned_prop
-
+        import pdb; pdb.set_trace()
         if wifi_info_sn is None:
             raise Exception("Get wifi_info_sn failed")
         logger.info("wifi_info_sn: %s", wifi_info_sn)
