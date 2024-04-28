@@ -4,15 +4,17 @@ from typing import Dict, Optional, Set, Tuple
 from PIL import Image
 from PIL.Image import Image as ImageType
 
-from custom_components.xiaomi_cloud_map_extractor.common.image_handler import ImageHandler
 from custom_components.xiaomi_cloud_map_extractor.const import *
-from custom_components.xiaomi_cloud_map_extractor.types import Colors, ImageConfig
-from parsing_buffer import ParsingBuffer
+from vacuum_map_parser_base.config.color import Color
+from vacuum_map_parser_base.image_generator import ImageGenerator
+from vacuum_map_parser_base.config.image_config import ImageConfig
+from vacuum_map_parser_base.map_data import Area, ImageData, MapData, Obstacle, Path, Point
+from .parsing_buffer import ParsingBuffer
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class ImageHandlerIjai(ImageHandler):
+class IjaiImageParser(ImageGenerator):
     MAP_OUTSIDE = 0x00
     MAP_WALL = 0xff
     MAP_SCAN = 0x01
@@ -21,26 +23,25 @@ class ImageHandlerIjai(ImageHandler):
     MAP_ROOM_MAX = 59
     MAP_SELECTED_ROOM_MIN = 60
     MAP_SELECTED_ROOM_MAX = 109
-    @staticmethod
-    def parse(buf: ParsingBuffer, width: int, height: int, colors: Colors, image_config: ImageConfig,
-            draw_cleaned_area: bool) \
+    
+    def draw_map(self, map_data: MapData) \
             -> Tuple[ImageType, Dict[int, Tuple[int, int, int, int]], Set[int], Optional[ImageType]]:
         palette = {\
-                    ImageHandlerIjai.MAP_OUTSIDE: ImageHandler.__get_color__(COLOR_MAP_OUTSIDE, colors),\
-                    ImageHandlerIjai.MAP_WALL: ImageHandler.__get_color__(COLOR_MAP_WALL_V2, colors),\
-                    ImageHandlerIjai.MAP_SCAN: ImageHandler.__get_color__(COLOR_SCAN, colors),\
-                    ImageHandlerIjai.MAP_NEW_DISCOVERED_AREA: ImageHandler.__get_color__(COLOR_NEW_DISCOVERED_AREA, colors)}
+                    IjaiImageParser.MAP_OUTSIDE: self._get_color(COLOR_MAP_OUTSIDE),\
+                    IjaiImageParser.MAP_WALL: self._get_color(COLOR_MAP_WALL_V2),\
+                    IjaiImageParser.MAP_SCAN: self._get_color(COLOR_SCAN),\
+                    IjaiImageParser.MAP_NEW_DISCOVERED_AREA: self._get_color(COLOR_NEW_DISCOVERED_AREA)}
         rooms = {}
         cleaned_areas = set()
-        scale = image_config[CONF_SCALE]
-        trim_left = int(image_config[CONF_TRIM][CONF_LEFT] * width / 100)
-        trim_right = int(image_config[CONF_TRIM][CONF_RIGHT] * width / 100)
-        trim_top = int(image_config[CONF_TRIM][CONF_TOP] * height / 100)
-        trim_bottom = int(image_config[CONF_TRIM][CONF_BOTTOM] * height / 100)
+        scale = self.image_config[CONF_SCALE]
+        trim_left = int(self.image_config[CONF_TRIM][CONF_LEFT] * width / 100)
+        trim_right = int(self.image_config[CONF_TRIM][CONF_RIGHT] * width / 100)
+        trim_top = int(self.image_config[CONF_TRIM][CONF_TOP] * height / 100)
+        trim_bottom = int(self.image_config[CONF_TRIM][CONF_BOTTOM] * height / 100)
         trimmed_height = height - trim_top - trim_bottom
         trimmed_width = width - trim_left - trim_right
         if trimmed_width == 0 or trimmed_height == 0:
-            return ImageHandler.create_empty_map_image(colors), rooms, cleaned_areas, None
+            return self.create_empty_map_image(colors), rooms, cleaned_areas, None
         image = Image.new('RGBA', (trimmed_width, trimmed_height))
         pixels = image.load()
         cleaned_areas_layer = None
@@ -60,13 +61,13 @@ class ImageHandlerIjai(ImageHandler):
                 y = trimmed_height - 1 - img_y
                 if pixel_type in palette.keys():
                     pixels[x, y] = palette[pixel_type]
-                elif ImageHandlerIjai.MAP_ROOM_MIN <= pixel_type <= ImageHandlerIjai.MAP_SELECTED_ROOM_MAX:
+                elif IjaiImageParser.MAP_ROOM_MIN <= pixel_type <= IjaiImageParser.MAP_SELECTED_ROOM_MAX:
                     room_x = img_x + trim_left
                     room_y = img_y + trim_bottom
-                    if pixel_type < ImageHandlerIjai.MAP_SELECTED_ROOM_MIN:
+                    if pixel_type < IjaiImageParser.MAP_SELECTED_ROOM_MIN:
                         room_number = pixel_type
                     else:
-                        room_number = pixel_type - ImageHandlerIjai.MAP_SELECTED_ROOM_MIN + ImageHandlerIjai.MAP_ROOM_MIN
+                        room_number = pixel_type - IjaiImageParser.MAP_SELECTED_ROOM_MIN + IjaiImageParser.MAP_ROOM_MIN
                         cleaned_areas.add(room_number)
                         if draw_cleaned_area:
                             cleaned_areas_pixels[x, y] = ImageHandler.__get_color__(COLOR_CLEANED_AREA, colors)
@@ -85,7 +86,7 @@ class ImageHandlerIjai(ImageHandler):
                     _LOGGER.debug(f"unknown pixel [{x},{y}] = {pixel_type}")
             buf.skip('trim_right', trim_right)
         buf.skip('trim_top', trim_top * width)
-        if image_config["scale"] != 1 and trimmed_width != 0 and trimmed_height != 0:
+        if self.image_config["scale"] != 1 and trimmed_width != 0 and trimmed_height != 0:
             image = image.resize((int(trimmed_width * scale), int(trimmed_height * scale)), resample=Image.NEAREST)
             if draw_cleaned_area:
                 cleaned_areas_layer = cleaned_areas_layer.resize(

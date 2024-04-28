@@ -11,8 +11,8 @@ from vacuum_map_parser_base.config.drawable import Drawable
 from vacuum_map_parser_base.config.image_config import ImageConfig
 from vacuum_map_parser_base.config.size import Size, Sizes
 from vacuum_map_parser_base.config.text import Text
-from image_handler import ImageHandlerIjai
-from parsing_buffer import ParsingBuffer
+from .image_handler import IjaiImageParser
+from .parsing_buffer import ParsingBuffer
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -112,8 +112,8 @@ class MapDataParserIjai(MapDataParser):
                 if map_data.vacuum_room is not None:
                     map_data.vacuum_room_name = map_data.rooms[map_data.vacuum_room].name
                 _LOGGER.debug('current vacuum room: %s', map_data.vacuum_room)
-            ImageHandlerIjai.rotate(map_data.image)
-            ImageHandlerIjai.draw_texts(map_data.image, texts)
+            IjaiImageParser.rotate(map_data.image)
+            IjaiImageParser.draw_texts(map_data.image, texts)
         return map_data
 
     @staticmethod
@@ -128,10 +128,10 @@ class MapDataParserIjai(MapDataParser):
     def get_current_vacuum_room(buf: ParsingBuffer, vacuum_position: Point) -> Optional[int]:
         vacuum_position_on_image = MapDataParserIjai.map_to_image(vacuum_position)
         pixel_type = buf.get_at_image(int(vacuum_position_on_image.y) * 800 + int(vacuum_position_on_image.x))
-        if ImageHandlerIjai.MAP_ROOM_MIN <= pixel_type <= ImageHandlerIjai.MAP_ROOM_MAX:
+        if IjaiImageParser.MAP_ROOM_MIN <= pixel_type <= IjaiImageParser.MAP_ROOM_MAX:
             return pixel_type
-        elif ImageHandlerIjai.MAP_SELECTED_ROOM_MIN <= pixel_type <= ImageHandlerIjai.MAP_SELECTED_ROOM_MAX:
-            return pixel_type - ImageHandlerIjai.MAP_SELECTED_ROOM_MIN + ImageHandlerIjai.MAP_ROOM_MIN
+        elif IjaiImageParser.MAP_SELECTED_ROOM_MIN <= pixel_type <= IjaiImageParser.MAP_SELECTED_ROOM_MAX:
+            return pixel_type - IjaiImageParser.MAP_SELECTED_ROOM_MIN + IjaiImageParser.MAP_ROOM_MIN
         return None
 
     @staticmethod
@@ -159,7 +159,7 @@ class MapDataParserIjai(MapDataParser):
             image_config[CONF_TRIM][CONF_TOP] = 0
             image_config[CONF_TRIM][CONF_BOTTOM] = 0
         buf.mark_as_image_beginning()
-        image, rooms_raw, cleaned_areas, cleaned_areas_layer = ImageHandlerIjai.parse(buf, image_width, image_height,
+        image, rooms_raw, cleaned_areas, cleaned_areas_layer = IjaiImageParser.parse(buf, image_width, image_height,
                                                                                        colors, image_config,
                                                                                        draw_cleaned_area)
         _LOGGER.debug('img: number of rooms: %d, numbers: %s', len(rooms_raw), rooms_raw.keys())
@@ -280,3 +280,7 @@ class MapDataParserIjai(MapDataParser):
             buf._offs += buf._length
             buf._length = 0
             return False
+        
+    # solved differently
+    def unpack_map(tmp):
+        pass

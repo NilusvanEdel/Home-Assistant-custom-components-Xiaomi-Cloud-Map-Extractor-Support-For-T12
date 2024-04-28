@@ -25,6 +25,7 @@ from .vacuum_platforms.vacuum_dreame import DreameCloudVacuum
 from .vacuum_platforms.vacuum_roborock import RoborockCloudVacuum
 from .vacuum_platforms.vacuum_roidmi import RoidmiCloudVacuum
 from .vacuum_platforms.vacuum_viomi import ViomiCloudVacuum
+from .vacuum_platforms.vacuum_ijai import IjaiCloudVacuum
 from .vacuum_platforms.vacuum_unsupported import UnsupportedCloudVacuum
 from .const import *
 
@@ -367,6 +368,8 @@ class VacuumCamera(Camera):
             return RoidmiCloudVacuum(vacuum_config)
         if self._used_api == CONF_AVAILABLE_API_DREAME:
             return DreameCloudVacuum(vacuum_config)
+        if self._used_api == CONF_AVAILABLE_API_IJAI:
+            return IjaiCloudVacuum(vacuum_config)
         return UnsupportedCloudVacuum(vacuum_config)
 
     def _detect_api(self, model: str) -> str | None:

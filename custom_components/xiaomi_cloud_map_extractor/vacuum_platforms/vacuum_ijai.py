@@ -10,7 +10,7 @@ from .vacuum_base import VacuumConfig
 from .vacuum_v2 import XiaomiCloudVacuumV2
 
 
-class ViomiCloudVacuum(XiaomiCloudVacuumV2):
+class IjaiCloudVacuum(XiaomiCloudVacuumV2):
 
     def __init__(self, vacuum_config: VacuumConfig):
         super().__init__(vacuum_config)
@@ -21,6 +21,7 @@ class ViomiCloudVacuum(XiaomiCloudVacuumV2):
             vacuum_config.image_config,
             vacuum_config.texts,
         )
+        self.vacuum_config = vacuum_config
 
     @property
     def map_archive_extension(self) -> str:
@@ -31,26 +32,24 @@ class ViomiCloudVacuum(XiaomiCloudVacuumV2):
         return self._viomi_map_data_parser
 
     def get_map_url(
-        connector: XiaomiCloudConnector,
-        country: str,
-        _user_id: str,
-        _device_id: str,
+        self,
         map_name: str,
     ) -> Optional[str]:
-        url = connector.get_api_url(country) + "/v2/home/get_interim_file_url_pro"
-        params = {"data": f'{{"obj_name":"{_user_id}/{_device_id}/{map_name}"}}'}
-        api_response = connector.execute_api_call_encrypted(url, params)
-        if (
-            api_response is None
-            or "result" not in api_response
-            or "url" not in api_response["result"]
-        ):
+        url = self._connector.get_api_url(self._country) + "/v2/home/get_interim_file_url_pro"
+        params = {"data": f'{{"obj_name":"{self._user_id}/{self._device_id}/{map_name}"}}'}
+        api_response = self._connector.execute_api_call_encrypted(url, params)
+        if (api_response is None or "result" not in api_response or "url" not in api_response["result"]):
             return None
         return api_response["result"]["url"]
+    
+    def get_raw_map_data(self, map_name: str | None) -> bytes | None:
+        if map_name is None:
+            return None
+        map_url = self.get_map_url(map_name="0")
+        return self._connector.get_raw_map_data(map_url)
 
     def decode_and_parse(self, data):
         self.decrypt_map(
-            self,
             data=data,
             wifi_info_sn=self._wifi_info_sn,
             user_id=self._user_id,
