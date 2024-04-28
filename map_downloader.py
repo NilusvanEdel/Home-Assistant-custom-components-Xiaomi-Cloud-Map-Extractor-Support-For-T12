@@ -1,4 +1,4 @@
-from custom_components.xiaomi_cloud_map_extractor.vacuum_platforms.xiaomi_cloud_connector import *
+from custom_components.xiaomi_cloud_map_extractor.vacuum_platforms.xiaomi_cloud_connector import XiaomiCloudConnector
 
 # pip install git+https://github.com/rytilahti/python-miio.git
 from miio.miot_device import MiotDevice
@@ -72,7 +72,7 @@ def main():
     logger = logging.getLogger(__name__)
     connector = XiaomiCloudConnector(account_info["username"], account_info["password"])
     if connector.login():
-        country, user_id, device_id, model, mac = connector.get_device_details(
+        country, user_id, device_id, model, mac, localip = connector.get_device_details(
             account_info["token"], account_info["country"]
         )
 
@@ -94,7 +94,7 @@ def main():
             ):
                 wifi_info_sn = cleaned_prop
 
-        if wifi_info_sn == None:
+        if wifi_info_sn is None:
             raise Exception("Get wifi_info_sn failed")
         logger.info("wifi_info_sn: %s", wifi_info_sn)
 

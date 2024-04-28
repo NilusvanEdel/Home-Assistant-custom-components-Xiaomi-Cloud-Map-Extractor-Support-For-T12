@@ -148,8 +148,9 @@ class XiaomiCloudConnector:
                 model = found[0]["model"]
                 mac = found[0]["mac"]
                 self.country = country
-                return country, user_id, device_id, model, mac
-        return None, None, None, None
+                localip = found[0]["localip"]
+                return country, user_id, device_id, model, mac, localip
+        return None, None, None, None, None
 
     def get_devices(self, country: str) -> any:
         url = self.get_api_url(country) + "/home/device_list"

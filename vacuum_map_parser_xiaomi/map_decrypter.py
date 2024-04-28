@@ -2,10 +2,8 @@ from Crypto.Cipher import AES
 from Crypto.Hash import MD5
 from Crypto.Util.Padding import pad, unpad
 import base64
-import hashlib
-import binascii
-
 IS_ENCRYPT_KEY_TYPE_HEX = True
+
 
 def aes_encryption(data, key: str):
     cipher = AES.new(key.encode(), AES.MODE_ECB)

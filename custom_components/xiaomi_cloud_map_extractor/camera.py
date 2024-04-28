@@ -297,11 +297,11 @@ class VacuumCamera(Camera):
 
     def _initialize_device(self):
         _LOGGER.debug("Retrieving device info, country: %s", self._country)
-        country, user_id, device_id, model = self._connector.get_device_details(self._token, self._country)
+        country, user_id, device_id, model, mac, localip = self._connector.get_device_details(self._token, self._country)
         if model is not None:
             self._country = country
             _LOGGER.debug("Retrieved device model: %s", model)
-            self._device = self._create_device(user_id, device_id, model)
+            self._device = self._create_device(user_id, device_id, model, mac, localip)
             _LOGGER.debug("Created device, used api: %s", self._used_api)
         else:
             _LOGGER.error("Failed to retrieve model")
@@ -339,7 +339,7 @@ class VacuumCamera(Camera):
         self._map_data = map_data
         self._store_image()
 
-    def _create_device(self, user_id: str, device_id: str, model: str) -> XiaomiCloudVacuum:
+    def _create_device(self, user_id: str, device_id: str, model: str, mac: str, localip: str) -> XiaomiCloudVacuum:
         self._used_api = self._detect_api(model)
         store_map_path = self._store_map_path if self._store_map_raw else None
         vacuum_config = VacuumConfig(
@@ -347,6 +347,8 @@ class VacuumCamera(Camera):
             self._country,
             user_id,
             device_id,
+            mac,
+            localip,
             self._host,
             self._token,
             model,
