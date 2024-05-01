@@ -1,9 +1,9 @@
 import logging
 from typing import Dict, Optional, Set, Tuple
 
-from PIL import Image
-from PIL.Image import Image as ImageType
+from PIL import Image, ImageDraw, ImageChops
 
+import pandas as pd
 import RobotMap_pb2 as RobotMap
 from custom_components.xiaomi_cloud_map_extractor.const import *
 from google.protobuf.json_format import MessageToDict
@@ -15,16 +15,8 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class IjaiImageParser(ImageGenerator):
-    MAP_OUTSIDE = 0x00
-    MAP_WALL = 0xff
-    MAP_SCAN = 0x01
-    MAP_NEW_DISCOVERED_AREA = 0x02
-    MAP_ROOM_MIN = 10
-    MAP_ROOM_MAX = 59
-    MAP_SELECTED_ROOM_MIN = 60
-    MAP_SELECTED_ROOM_MAX = 109
     
-    def draw_map(self, robot_map: RobotMap, width: int, height: int) -> Tuple[ImageType, Dict[int, Tuple[int, int, int, int]], Set[int], Optional[ImageType]]:
+    def draw_map(self, robot_map: RobotMap, width: int, height: int):
         fields = robot_map.DESCRIPTOR.fields_by_name.keys()  # todo: del later
         draw_cleaned_area: bool = DRAWABLE_CLEANED_AREA in self._drawables
         rooms = {}
@@ -39,23 +31,47 @@ class IjaiImageParser(ImageGenerator):
         if trimmed_width == 0 or trimmed_height == 0:
             return self.create_empty_map_image(), rooms, cleaned_areas, None
         image = Image.frombytes("L", (trimmed_width, trimmed_height), robot_map.mapData.mapData).convert("RGBA")
-        pixels = image.load()
+        image, rooms = self._draw_rooms(robot_map, image, width, height)
+        import pdb; pdb.set_trace()
         cleaned_areas_layer = None
         cleaned_areas_pixels = None
         if draw_cleaned_area: # todo
             cleaned_areas_layer = Image.new('RGBA', (trimmed_width, trimmed_height))
             cleaned_areas_pixels = cleaned_areas_layer.load()
         _LOGGER.debug(f"trim_bottom = {trim_bottom}, trim_top = {trim_top}, trim_left = {trim_left}, trim_right = {trim_right}")
-        import pdb; pdb.set_trace()
         return image, rooms, cleaned_areas, cleaned_areas_layer
     
-    def _draw_rooms(self, robot_map: RobotMap):
-        room_chain_dicts = [MessageToDict(item) for item in robot_map.roomChain]
-        for room_idx in len(robot_map.roomDataInfo):
-            room_name = robot_map.roomDataInfo[room_idx].get("roomName", "Unknown")
-            color_id = robot_map.roomDataInfo[room_idx].get("colorID", 0)
-            room_name_pos = robot_map.roomDataInfo[room_idx].get("roomNamePost", None)
-            room_chain = robot_map.roomChain[0]
-            _LOGGER.debug(f"drawing room {room_idx}: {room_name}, color_id: {color_id}, room_name_pos: {room_name_pos}, room_chain: {room_chain}")
+    def _draw_rooms(self, robot_map: RobotMap, image: Image, width: int, height: int):
+        room_chain_dicts = self._roomChain_to_df(robot_map.roomChain)
+        room_images = {}
+        room_coords = {}
+        for room_idx in range(len(robot_map.roomDataInfo)):
+            room_name = robot_map.roomDataInfo[room_idx].roomName
+            color_id = robot_map.roomDataInfo[room_idx].colorId
+            room_name_pos = robot_map.roomDataInfo[room_idx].roomNamePost
+            room_id = robot_map.roomDataInfo[room_idx].roomId
+            room_df = room_chain_dicts[room_id]
+            _LOGGER.debug(f"drawing room {room_idx}: {room_name}, color_id: {color_id}, room_name_pos: {room_name_pos}")
+            # room_image, room_coord = self._draw_room(room_df, room_name, color_id, width, height)  # accurate to app
+            room_image, room_coord = self._draw_room(room_df, room_name, room_id, width, height)
+            room_coords[room_name] = room_coord
+            room_images[room_name] = room_image
+            image = ImageChops.add(image, room_image, scale=1.0)
+        image.save("Home.png")
+        return image, room_coords
 
-    def _draw_room():
+    def _draw_room(self, room_df, room_name: str, color_id: int, img_width: int, img_height: int):
+        image = Image.new("RGBA", (img_width, img_height))
+        draw = ImageDraw.Draw(image)
+        points = [(row['x'], row['y']) for _, row in room_df.iterrows() if row['value'] is not None]
+        draw.polygon(points, fill=self._palette.ROOM_COLORS[str(color_id)])
+        image.save(f"room_{room_name}.png")
+        return image, points
+        
+    def _roomChain_to_df(self, room_chains) -> Dict[str, pd.DataFrame]:
+        room_chains_dict = {}
+        for room_chain in room_chains:
+            room_chain_dict = MessageToDict(room_chain)
+            room_chains_dict[room_chain_dict["roomId"]] = pd.DataFrame(room_chain_dict["points"])
+        return room_chains_dict
+    

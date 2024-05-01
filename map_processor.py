@@ -45,7 +45,7 @@ def create_camera(config: dict, output_dir: str) -> VacuumCamera:
     password = config[CONF_PASSWORD]
     country = config[CONF_COUNTRY]
     image_config = config[CONF_MAP_TRANSFORM]
-    colors = config[CONF_COLORS]
+    colors = ColorsPalette(config[CONF_COLORS])
     room_colors = config[CONF_ROOM_COLORS]
     for room, color in room_colors.items():
         colors[f"{COLOR_ROOM_PREFIX}{room}"] = color
