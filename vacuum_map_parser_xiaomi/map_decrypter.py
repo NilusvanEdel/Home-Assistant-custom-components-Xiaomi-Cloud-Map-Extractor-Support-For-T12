@@ -62,10 +62,6 @@ def generate_md5_key(wifi_info_sn: str, owner_id: str, device_id: str, model: st
 
 
 def unGzipCommon(data: bytes, wifi_info_sn: str, owner_id: str, device_id: str, model: str, device_mac: str):
-    try:
-        temp_key = generate_md5_key(wifi_info_sn, owner_id, device_id, model, device_mac)
-        temp_string = aes_decryption(data, temp_key)
-        return temp_string
-    except Exception as e:
-        print("DEBUG ERROR Function : unGzipCommon : %s" % e)
-        return None
+    temp_key = generate_md5_key(wifi_info_sn, owner_id, device_id, model, device_mac)
+    temp_string = aes_decryption(data, temp_key)
+    return temp_string

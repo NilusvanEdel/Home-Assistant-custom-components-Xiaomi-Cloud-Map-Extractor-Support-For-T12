@@ -1,3 +1,4 @@
+import zlib
 from typing import Optional
 
 from custom_components.xiaomi_cloud_map_extractor.vacuum_platforms.xiaomi_cloud_connector import (
@@ -57,7 +58,9 @@ class IjaiCloudVacuum(XiaomiCloudVacuumV2):
             model=self.model,
             mac=self._mac
         )
-        self.map_data_parser.parse(decoded_map)
+        deflated_map = bytes.fromhex(decoded_map)
+        inflated_map = zlib.decompress(deflated_map)
+        self.map_data_parser.parse(inflated_map)
 
     def decrypt_map(
         self,

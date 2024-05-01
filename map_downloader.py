@@ -2,6 +2,7 @@ from custom_components.xiaomi_cloud_map_extractor.vacuum_platforms.xiaomi_cloud_
 
 # pip install git+https://github.com/rytilahti/python-miio.git
 from miio.miot_device import MiotDevice
+from PIL import Image, ImageDraw
 
 # Note: you will need Microsoft C++ Build Tools to install this
 
@@ -55,8 +56,18 @@ def save_map(inflated_map: bytes, map_name: str, logger: logging.Logger):
         imageBytes = robot_map.mapData.mapData
         imageWidth = robot_map.mapHead.sizeX
         imageHeight = robot_map.mapHead.sizeY
-        PIL.Image.frombytes("L", (imageWidth, imageHeight), imageBytes).save(
-            os.path.join(mapsdir, f"{map_name}.decrypted.map.bmp"), "bmp"
+        image = PIL.Image.frombytes("L", (imageWidth, imageHeight), imageBytes)
+
+        charge_station_x = robot_map.chargeStation.x
+        charge_station_y = imageHeight - robot_map.chargeStation.y  # transform the y-coordinate if necessary
+
+        # Draw a line indicating the orientation
+        line_length = 20  # adjust as needed
+        end_x = charge_station_x + line_length * math.cos(robot_map.chargeStation.phi)
+        end_y = charge_station_y - line_length * math.sin(robot_map.chargeStation.phi)  # subtract the sin component if necessary
+        draw.line((charge_station_x, charge_station_y, end_x, end_y), fill='green')
+        image.save(
+            os.path.join(mapsdir, f"{map_name}.decrypted.map.png"), "png"
         )
         logger.info("Done, saved")
     except:
@@ -91,7 +102,6 @@ def main():
                 and cleaned_prop.isupper()
             ):
                 wifi_info_sn = cleaned_prop
-        import pdb; pdb.set_trace()
         if wifi_info_sn is None:
             raise Exception("Get wifi_info_sn failed")
         logger.info("wifi_info_sn: %s", wifi_info_sn)
@@ -132,7 +142,6 @@ def main():
                 file.write(base64.b64decode(req.content))
             with open(base_decryptedmap_name, "wb") as file:
                 file.write(deflated_map)
-
             inflated_map = zlib.decompress(deflated_map)
             with open(base_decryptedmap_name + ".decompressed", "wb") as file:
                 file.write(inflated_map)
